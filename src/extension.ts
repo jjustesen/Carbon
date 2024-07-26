@@ -1,72 +1,70 @@
 import * as vscode from "vscode";
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log('Your extension "my-extension" is now active!');
+  console.log('A extensão "minha-extensao" está ativa!');
 
-  let disposable = vscode.commands.registerCommand(
-    "my-extension.showFileName",
-    () => {
-      const editor = vscode.window.activeTextEditor;
-      if (editor) {
-        const fileName = vscode.workspace.asRelativePath(editor.document.uri);
+  const treeDataProvider = createFileTreeDataProvider();
+  vscode.window.registerTreeDataProvider("fileExplorer", treeDataProvider);
 
-        //le o arquivo atual e exibe os imports que contem no arquivo
-        let text = editor.document.getText();
-        let lines = text.split("\n");
-        let imports = lines.filter((line) => line.includes("import"));
-        console.log(imports);
-
-        // vscode.window.showInformationMessage(`Current file: ${fileName}`);
-      } else {
-        vscode.window.showInformationMessage("No file is currently open.");
-      }
+  // Atualiza a árvore quando o arquivo aberto mudar
+  vscode.window.onDidChangeActiveTextEditor((editor) => {
+    if (editor) {
+      treeDataProvider.refresh();
     }
-  );
-
-  vscode.window.registerTreeDataProvider("myExtensionView", MyTreeDataProvider);
-
-  myStatusBarItem = vscode.window.createStatusBarItem(
-    vscode.StatusBarAlignment.Left,
-    10000
-  );
-  context.subscriptions.push(myStatusBarItem);
-
-  updateStatusBar(context);
-
-  context.subscriptions.push(disposable);
+  });
 }
 
 export function deactivate() {}
 
-let myStatusBarItem: vscode.StatusBarItem;
+function createFileTreeDataProvider(): vscode.TreeDataProvider<FileItem> {
+  const onDidChangeTreeData: vscode.EventEmitter<
+    FileItem | undefined | null | void
+  > = new vscode.EventEmitter<FileItem | undefined | null | void>();
 
-function updateStatusBar(context: vscode.ExtensionContext) {
-  myStatusBarItem.text = `Hello world`;
-  myStatusBarItem.tooltip = "Click to show the current file name";
-  myStatusBarItem.show();
+  const getTreeItem = (element: FileItem): vscode.TreeItem => {
+    return createFileItem(element.filePath);
+  };
+
+  const getChildren = (element?: FileItem): Thenable<FileItem[]> => {
+    if (element) {
+      return Promise.resolve([]);
+    } else {
+      const editor = vscode.window.activeTextEditor;
+      if (editor) {
+        const filePath = editor.document.fileName;
+        const text = editor.document.getText();
+        const lines = text.split("\n");
+        const imports = lines.filter((line) => line.includes("import"));
+
+        return Promise.resolve(imports.map((line) => createFileItem(line)));
+      } else {
+        return Promise.resolve([]);
+      }
+    }
+  };
+
+  return {
+    onDidChangeTreeData: onDidChangeTreeData.event,
+    getTreeItem,
+    getChildren,
+    refresh: () => {
+      onDidChangeTreeData.fire();
+    },
+  };
 }
 
-const MyTreeDataProvider = {
-  getTreeItem(element: vscode.TreeItem) {
-    return element;
-  },
+interface FileItem extends vscode.TreeItem {
+  filePath: string;
+}
 
-  getChildren(element?: vscode.TreeItem): Thenable<vscode.TreeItem[]> {
-    return Promise.resolve(this.getItems());
-  },
+function createFileItem(filePath: string): FileItem {
+  const item: FileItem = {
+    label: filePath,
+    tooltip: filePath,
+    description: filePath,
+    filePath: filePath,
+    collapsibleState: vscode.TreeItemCollapsibleState.None,
+  };
 
-  getItems(): vscode.TreeItem[] {
-    const items: vscode.TreeItem[] = [];
-
-    items.push(createMyTreeItem("Item 1"));
-    items.push(createMyTreeItem("Item 2"));
-    return items;
-  },
-};
-
-function createMyTreeItem(label: string) {
-  const item = new vscode.TreeItem(label);
-  item.tooltip = `Tooltip for ${label}`;
-  item.description = `Description for ${label}`;
   return item;
 }
