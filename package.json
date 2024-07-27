@@ -110,12 +110,12 @@
       ]
     },
     "views": {
-      "myExtension": [
-        {
-          "id": "myExtensionView",
-          "name": "My View"
-        }
+      "explorer": [
+          {
+              "id": "fileExplorer",
+              "name": "File Explorer"
+          }
       ]
-    }
+  }
   }
 }
