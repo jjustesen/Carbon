@@ -111,11 +111,11 @@
     },
     "views": {
       "explorer": [
-          {
-              "id": "fileExplorer",
-              "name": "File Explorer"
-          }
+        {
+          "id": "fileExplorer",
+          "name": "Arquivos dependentes"
+        }
       ]
-  }
+    }
   }
 }
